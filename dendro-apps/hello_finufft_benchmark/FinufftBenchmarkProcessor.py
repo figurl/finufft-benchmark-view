@@ -1,4 +1,5 @@
 from dendro.sdk import ProcessorBase, BaseModel, Field, OutputFile
+import json
 
 class FinufftBenchmarkContext(BaseModel):
     output: OutputFile = Field(description='Output .json file')
@@ -21,12 +22,22 @@ class FinufftBenchmarkProcessor(ProcessorBase):
         output = context.output
         commit_hash = context.commit_hash
 
-        install_finufft(commit_hash=commit_hash)
+        commit_date = install_finufft(commit_hash=commit_hash)
 
-        cmd = 'finufft-benchmark run --output finufft-benchmark.json'
+        BENCHMARK_OUTPUT_FILE = 'finufft-benchmark.json'
+
+        cmd = f'finufft-benchmark run --output {BENCHMARK_OUTPUT_FILE}'
         subprocess.run(cmd, shell=True, check=True)
 
-        output.upload('finufft-benchmark.json')
+        with open(BENCHMARK_OUTPUT_FILE, 'r') as f:
+            data = json.load(f)
+            data['commit_hash'] = commit_hash
+            data['commit_date'] = commit_date
+
+        with open(BENCHMARK_OUTPUT_FILE, 'w') as f:
+            json.dump(data, f, indent=4)
+
+        output.upload(BENCHMARK_OUTPUT_FILE)
 
 
 def install_finufft(commit_hash: str):
@@ -39,7 +50,7 @@ set -ex
 git clone https://github.com/flatironinstitute/finufft
 cd finufft
 git checkout {commit_hash}
-cp make.inc.linux make.inc
+git show --format=%ci --no-patch {commit_hash} > commit_date.txt
 make test -j
 make python -j
 '''
@@ -50,3 +61,9 @@ make python -j
     result = subprocess.run(['bash', 'install_finufft.sh'], capture_output=False, text=True, check=False)
     if result.returncode != 0:
         raise Exception(f'Problem installing finufft: {result.returncode}')
+
+    with open('finufft/commit_date.txt', 'r') as f:
+        commit_date = f.read().strip()
+
+    return commit_date
+

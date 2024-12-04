@@ -1,7 +1,7 @@
 FROM python:3.9
 
-# Install fftw-dev
-RUN apt-get update && apt-get install -y libfftw3-dev
+# Install fftw-dev and g++
+RUN apt-get update && apt-get install -y libfftw3-dev g++
 
 # Install dendro
 RUN pip install dendro && echo "v1"
