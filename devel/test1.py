@@ -2,7 +2,9 @@ from dendro.client import submit_job, DendroJobDefinition, DendroJobRequiredReso
 
 # commit_hash = 'ff9c2834ae9033c99a613fe2591e3a4e471499ae'
 # commit_hash = '97bfe854822a3d9d4e94a64f33aa5044634e7542'
-commit_hash = '317b156c6c777b2ecc62c52df48d0806533388ad'
+# commit_hash = '317b156c6c777b2ecc62c52df48d0806533388ad'
+# commit_hash = '4fe380544202f0ad7b89f52c4e08a70f090ed22b'
+commit_hash = '5ce09d6c7526caa30fe7cb05396896d175d13436'
 
 job_definition = DendroJobDefinition(
     appName='hello_finufft_benchmark',

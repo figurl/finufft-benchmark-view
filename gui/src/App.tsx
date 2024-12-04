@@ -21,13 +21,8 @@ function App() {
   const [okayToViewSmallScreen, setOkayToViewSmallScreen] = useState(false);
   const { jobs: benchmarkJobs } = useBenchmarkJobs();
   const divHandler = useDivHandler({ mainAreaWidth, benchmarkJobs });
-  console.log('--- benchmark jobs', benchmarkJobs);
   if (width < 800 && !okayToViewSmallScreen) {
-    return (
-      <SmallScreenMessage
-        onOkay={() => setOkayToViewSmallScreen(true)}
-      />
-    );
+    return <SmallScreenMessage onOkay={() => setOkayToViewSmallScreen(true)} />;
   }
   return (
     <div
@@ -42,38 +37,34 @@ function App() {
         style={{
           position: "absolute",
           left: offsetLeft,
-          width: mainAreaWidth
+          width: mainAreaWidth,
         }}
       >
-        <Markdown
-          source={mainMd}
-          linkTarget="_self"
-          divHandler={divHandler}
-        />
+        <Markdown source={mainMd} linkTarget="_self" divHandler={divHandler} />
       </div>
     </div>
   );
 }
 
-const SmallScreenMessage: FunctionComponent<{ onOkay: () => void }> = ({ onOkay }) => {
+const SmallScreenMessage: FunctionComponent<{ onOkay: () => void }> = ({
+  onOkay,
+}) => {
   return (
-    <div style={{padding: 20}}>
+    <div style={{ padding: 20 }}>
       <p>
-        This page is not optimized for small screens or mobile devices. Please use a larger
-        screen or expand your browser window width.
+        This page is not optimized for small screens or mobile devices. Please
+        use a larger screen or expand your browser window width.
       </p>
       <p>
-        <button onClick={onOkay}>
-          I understand, continue anyway
-        </button>
+        <button onClick={onOkay}>I understand, continue anyway</button>
       </p>
     </div>
   );
-}
+};
 
 interface DivHandlerConfig {
   mainAreaWidth: number;
-  benchmarkJobs: DendroJob[] | undefined
+  benchmarkJobs: DendroJob[] | undefined;
 }
 
 interface DivHandlerProps {
@@ -89,14 +80,14 @@ const useDivHandler = (config: DivHandlerConfig): DivHandlerComponent => {
   const { mainAreaWidth, benchmarkJobs } = config;
   return ({ className, props, children }: DivHandlerProps) => {
     switch (className) {
-      case 'jobs-table': {
+      case "jobs-table": {
         return (
           <BenchmarkJobsTable
             width={mainAreaWidth}
             height={500}
             benchmarkJobs={benchmarkJobs}
           />
-        )
+        );
       }
 
       default:
@@ -116,26 +107,32 @@ const useBenchmarkJobs = () => {
     appName: "hello_finufft_benchmark",
     processorName: "finufft_benchmark",
     tags,
-    maxNumJobs: 1000
-  })
+    maxNumJobs: 1000,
+  });
   return jobs;
-}
+};
 
 type BenchmarkJobsTableProps = {
   width: number;
   height: number;
   benchmarkJobs: DendroJob[] | undefined;
-}
+};
 
-const BenchmarkJobsTable: FunctionComponent<BenchmarkJobsTableProps> = ({ width, height, benchmarkJobs }) => {
+const BenchmarkJobsTable: FunctionComponent<BenchmarkJobsTableProps> = ({
+  width,
+  height,
+  benchmarkJobs,
+}) => {
   if (!benchmarkJobs) {
-    return <div>Loading benchmark jobs...</div>
+    return <div>Loading benchmark jobs...</div>;
   }
   return (
     <table>
       <thead>
         <tr>
+          <th>Job</th>
           <th>Commit</th>
+          <th>Total duration</th>
         </tr>
       </thead>
       <tbody>
@@ -144,54 +141,150 @@ const BenchmarkJobsTable: FunctionComponent<BenchmarkJobsTableProps> = ({ width,
         ))}
       </tbody>
     </table>
-  )
-}
+  );
+};
 
 type BenchmarkJobRowProps = {
   job: DendroJob;
-}
+};
+
+const JobLink: FunctionComponent<{ job: DendroJob }> = ({ job }) => {
+  const url = `https://dendro.vercel.app/job/${job.jobId}`;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      {job.status}
+    </a>
+  );
+};
 
 const BenchmarkJobRow: FunctionComponent<BenchmarkJobRowProps> = ({ job }) => {
-  const output = useBenchmarkJobOutput(job);
-  const numCols = 1;
+  const jobOutput = useBenchmarkJobOutput(job);
+  const numCols = 3;
   if (job.status !== "completed") {
-    const viewJobUrl = `https://dendro.vercel.app/job/${job.jobId}`;
-    return <tr><td colSpan={numCols}>
-      <a href={viewJobUrl} target="_blank" rel="noreferrer">
-        {job.status}
-      </a>
-    </td></tr>
+    return (
+      <tr>
+        <td>
+          <JobLink job={job} />
+        </td>
+        <td colSpan={numCols - 1}>{job.status}</td>
+      </tr>
+    );
   }
-  if (output === undefined) {
-    return <tr><td colSpan={numCols}>Loading...</td></tr>
+  if (jobOutput === undefined) {
+    return (
+      <tr>
+        <td>
+          <JobLink job={job} />
+        </td>
+        <td colSpan={numCols - 1}>Loading output...</td>
+      </tr>
+    );
   }
-  if (output === null) {
-    return <tr><td colSpan={numCols}>Problem getting output</td></tr>
+  if (jobOutput === null) {
+    return (
+      <tr>
+        <td>
+          <JobLink job={job} />
+        </td>
+        <td colSpan={numCols - 1}>Failed to load output</td>
+      </tr>
+    );
   }
   return (
     <tr>
-      <td>{output.commit_date} (<CommitLink commit_hash={output.commit_hash} />)</td>
+      <td>
+        <JobLink job={job} />
+      </td>
+      <td>
+        {jobOutput.commit_date} (<CommitLink commit_hash={jobOutput.commit_hash} />)
+      </td>
+      <td>
+          {computeTotalDuration(jobOutput)}
+        </td>
     </tr>
-  )
-}
+  );
+};
 
-const CommitLink: FunctionComponent<{ commit_hash: string }> = ({ commit_hash }) => {
+const CommitLink: FunctionComponent<{ commit_hash: string }> = ({
+  commit_hash,
+}) => {
   const url = `https://github.com/flatironinstitute/finufft/tree/${commit_hash}`;
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-    >
+    <a href={url} target="_blank" rel="noreferrer">
       {commit_hash.slice(0, 8)}
     </a>
   );
+};
+
+type JobOutputSystemInfo = {
+  system: string;
+  node: string;
+  release: string;
+  version: string;
+  machine: string;
+  processor: string;
+  physical_cores: number;
+  total_cores: number;
+  cpu_freq_min: number;
+  cpu_freq_max: number;
+  cpu_freq_current: number;
+  memory_total: number;
+  memory_available: number;
+  memory_used: number;
+  swap_total: number;
+  swap_free: number;
+  swap_used: number;
+  date: number;
+};
+
+type JobOutputJobArgs = {
+  transform_type: number;
+  num_uniform_points: number;
+  num_nonuniform_points: number;
+  eps: number;
+  num_reps: number;
+  nthreads: number;
+};
+
+type JobOutputJobResult = {
+  elapsed: number;
+};
+
+type JobOutputJob = {
+  label: string;
+  args: JobOutputJobArgs;
+  results: JobOutputJobResult[];
+};
+
+type JobOutputGroup = {
+  label: string;
+  jobs: JobOutputJob[];
+};
+
+type JobOutput = {
+  system_info: JobOutputSystemInfo;
+  groups: JobOutputGroup[];
+  commit_hash: string;
+  commit_date: string;
+};
+
+const computeTotalDuration = (output: JobOutput): string => {
+  let total = 0;
+  for (const group of output.groups) {
+    for (const job of group.jobs) {
+      for (const result of job.results) {
+        total += result.elapsed;
+      }
+    }
+  }
+  return `${total.toFixed(1)} s`;
 }
 
-const useBenchmarkJobOutput = (job: DendroJob) => {
+const useBenchmarkJobOutput = (
+  job: DendroJob
+): JobOutput | undefined | null => {
   const o = job.outputFileResults.find((result) => result.name === "output");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [output, setOutput] = useState<any | undefined | null>(undefined);
+  const [output, setOutput] = useState<JobOutput | undefined | null>(undefined);
   useEffect(() => {
     setOutput(undefined);
     if (!o) {
@@ -210,13 +303,13 @@ const useBenchmarkJobOutput = (job: DendroJob) => {
       const obj = await response.json();
       if (canceled) return;
       setOutput(obj);
-    }
+    };
     load();
     return () => {
       canceled = true;
-    }
+    };
   }, [job.jobId, o]);
   return output;
-}
+};
 
 export default App;
