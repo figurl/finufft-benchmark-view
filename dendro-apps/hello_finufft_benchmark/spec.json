@@ -1,0 +1,28 @@
+{
+    "name": "hello_finufft_benchmark",
+    "description": "Run a finufft benchmark for a particular git commit",
+    "processors": [
+        {
+            "name": "finufft_benchmark",
+            "description": "Run a finufft benchmark for a particular git commit",
+            "label": "finufft_benchmark",
+            "image": "magland/dendro-hello-finufft-benchmark:0.1.0",
+            "executable": "/app/main.py",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "output",
+                    "description": "Output .json file"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "commit_hash",
+                    "type": "str",
+                    "description": "Git commit hash"
+                }
+            ],
+            "attributes": []
+        }
+    ]
+}
